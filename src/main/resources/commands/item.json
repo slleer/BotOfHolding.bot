@@ -1,0 +1,19 @@
+{
+  "name": "item",
+  "description": "item commands",
+  "options": [
+    {
+      "name": "find",
+      "description": "Find an item",
+      "type": 1,
+      "options": [
+        {
+          "name": "name",
+          "description": "Name of the item",
+          "type": 3,
+          "autocomplete": true
+        }
+      ]
+    }
+  ]
+}

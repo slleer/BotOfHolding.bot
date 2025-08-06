@@ -1,0 +1,105 @@
+{
+  "name": "container",
+  "description": "container commands",
+  "options": [
+    {
+      "name": "new",
+      "description": "Create a new container",
+      "type": 1,
+      "options": [
+        {
+          "name": "name",
+          "description": "Name of the container. EX: Stant's 7-sided box.",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "description",
+          "description": "Description of the container.",
+          "type": 3
+        },
+        {
+          "name": "type",
+          "description": "What kind of container. EX: 'D&D 5e'",
+          "type": 3
+        },
+        {
+          "name": "server-owned",
+          "description": "if true, container will be owned by the server and available to all members",
+          "type": 5
+        },
+        {
+          "name": "set-as-active",
+          "description": "Set this container as active",
+          "type": 5
+        }
+      ]
+    },
+    {
+      "name": "find",
+      "description": "Find container",
+      "type": 1,
+      "options": [
+        {
+          "name": "name",
+          "description": "Name of the container. EX: Stant's 7-sided box. Returns all containers for user if blank",
+          "type": 3,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "find-active",
+      "description": "Returns this user's active container",
+      "type": 1
+    },
+    {
+      "name": "set-active",
+      "description": "Set this container as active",
+      "type": 1,
+      "options": [
+        {
+          "name": "name",
+          "description": "Name of the container. EX: Stant's 7-sided box.",
+          "type": 3,
+          "required": true,
+          "autocomplete": true
+        },
+        {
+          "name": "prioritize",
+          "description": "Choose which to prioritize in the event of a collision. Use if autocomplete fails.",
+          "type": 3,
+          "choices": [
+            {
+              "name": "Server Owned",
+              "value": "GUILD"
+            },
+            {
+              "name": "User Owned",
+              "value": "USER"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "delete",
+      "description": "Delete a container",
+      "type": 1,
+      "options": [
+        {
+          "name": "name",
+          "description": "Name of the container to delete",
+          "type": 3,
+          "required": true
+        },
+        {
+          "name": "id",
+          "description": "The id of the container to delete",
+          "type": 4,
+          "required": true
+        }
+      ]
+    }
+  ]
+}

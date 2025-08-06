@@ -1,0 +1,38 @@
+{
+  "name": "user",
+  "description": "user commands",
+  "options": [
+    {
+      "name": "update",
+      "description": "Update user details",
+      "type": 1
+    },
+    {
+      "name": "get",
+      "description": "Get user details",
+      "type": 1
+    },
+    {
+      "name": "settings",
+      "description": "Get or update User settings, blank fields will be ignored",
+      "type": 1,
+      "options": [
+        {
+          "name": "hide-container",
+          "description": "If false, container commands will be visible to the server. Otherwise, only you can see them.",
+          "type": 5
+        },
+        {
+          "name": "hide-user",
+          "description": "If false, user commands will be visible to the server. Otherwise, only you can see them.",
+          "type": 5
+        },
+        {
+          "name": "hide-item",
+          "description": "If false, item commands will be visible to the server. Otherwise, only you can see them.",
+          "type": 5
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "name": "inventory",
+  "description": "Manage items within your active container",
+  "options": [
+    {
+      "name": "add",
+      "description": "Add an item to your active container",
+      "type": 1,
+      "options": [
+        {
+          "name": "item",
+          "description": "item to add",
+          "type": 3,
+          "required": true,
+          "autocomplete": true
+        },
+        {
+          "name": "quantity",
+          "description": "Quantity of the item to add. Defaults to 1",
+          "type": 4
+        },
+        {
+          "name": "note",
+          "description": "Add a note to the item (max 350 characters).",
+          "type": 3
+        },
+        {
+          "name": "inside-this-item",
+          "description": "Put item inside-this-item. Failure won't prevent item from being added to container.",
+          "type": 3,
+          "autocomplete": true
+        }
+      ]
+    },
+    {
+      "name": "drop",
+      "description": "Drop an item from your active container",
+      "type": 1,
+      "options": [
+        {
+          "name": "item",
+          "description": "item to drop",
+          "type": 3,
+          "required": true,
+          "autocomplete": true
+        },
+        {
+          "name": "quantity",
+          "description": "Quantity of the item to drop. Defaults to 1",
+          "type": 4
+        },
+        {
+          "name": "drop-contents",
+          "description": "If true and item is container, contents will be dropped with item.",
+          "type": 5
+        }
+      ]
+    }
+  ]
+}
