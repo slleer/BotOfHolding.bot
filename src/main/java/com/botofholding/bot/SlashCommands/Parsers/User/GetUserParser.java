@@ -35,9 +35,9 @@ public class GetUserParser implements UserParser {
         Mono<Boolean> userEphemeralMono = getEphemeralSetting(apiClient);
 
         Mono<String> replyMono = apiClient.getMyProfile()
-                .map(userDto -> {
-                    logger.info("Successfully retrieved user data for Discord ID: {}", userDto.getDiscordId());
-                    return MessageFormatter.formatUserReply(userDto, "Found");
+                .map(payload -> {
+                    logger.info("Successfully retrieved user data for Discord ID: {} with message '{}'.", payload.data().getDiscordId(), payload.message());
+                    return MessageFormatter.formatUserReply(payload.data(), payload.message());
                 });
 
         return Mono.zip(userEphemeralMono, replyMono)

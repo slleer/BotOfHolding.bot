@@ -3,13 +3,11 @@ package com.botofholding.bot.AutoComplete;
 import com.botofholding.bot.AutoComplete.Providers.AutoCompleteProvider;
 import com.botofholding.bot.Utility.EventUtility;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,6 +25,11 @@ public abstract class AutoCompleteDispatcher<P extends AutoCompleteProvider> imp
         this.commandName = commandName;
         // Build a map for efficient, direct lookups. The key is a composite of "subcommand:option".
         this.providerMap = providers.stream()
+                .peek(provider -> logger.info(
+                        "Registering AutoCompleteProvider: {} for key: '{}'",
+                        provider.getClass().getSimpleName(),
+                        (provider.getSubCommandName() + ":" + provider.getOptionName()).toLowerCase()
+                ))
                 .collect(Collectors.toMap(
                         provider -> (provider.getSubCommandName() + ":" + provider.getOptionName()).toLowerCase(),
                         provider -> provider,
@@ -57,14 +60,14 @@ public abstract class AutoCompleteDispatcher<P extends AutoCompleteProvider> imp
 
         logger.debug("Dispatching autocomplete for command '{}', lookup key: '{}'", commandName, lookupKey);
 
-        return Mono.justOrEmpty(providerMap.get(lookupKey))
-                .flatMap(provider -> {
-                    logger.debug("Found provider {} for key '{}'", provider.getClass().getSimpleName(), lookupKey);
-                    return provider.handle(event).thenReturn(true);
-                })
-                .switchIfEmpty(Mono.defer(() -> {
-                    logger.warn("No AutoCompleteProvider found for command '{}' with key '{}'", commandName, lookupKey);
-                    return Mono.empty();
-                })).then();
+        AutoCompleteProvider provider = providerMap.get(lookupKey);
+
+        if (provider != null) {
+            logger.debug("Found provider {} for key '{}'", provider.getClass().getSimpleName(), lookupKey);
+            return provider.handle(event);
+        } else {
+            logger.warn("No AutoCompleteProvider found for command '{}' with key '{}'", commandName, lookupKey);
+            return Mono.empty();
+        }
     }
 }

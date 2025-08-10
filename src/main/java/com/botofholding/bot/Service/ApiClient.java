@@ -2,6 +2,7 @@ package com.botofholding.bot.Service;
 
 import com.botofholding.bot.Domain.DTOs.Request.*;
 import com.botofholding.bot.Domain.DTOs.Response.*;
+import com.botofholding.bot.Domain.Entities.ApiResponsePayload;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -12,8 +13,8 @@ public interface ApiClient {
     //Mono<String>
 
     // USER & SETTINGS
-    Mono<BohUserDto> getMyProfile();
-    Mono<BohUserDto> updateMyProfile(UserRequestDto dto);
+    Mono<ApiResponsePayload<BohUserDto>> getMyProfile();
+    Mono<ApiResponsePayload<BohUserDto>> updateMyProfile(UserRequestDto dto);
     Mono<UserSettingsDto> getMySettings();
     Mono<UserSettingsDto> updateMySettings(UserSettingsUpdateRequestDto dto);
 
@@ -35,6 +36,7 @@ public interface ApiClient {
     Mono<List<AutoCompleteDto>> autocompleteParentActiveContainerItems(String prefix);
 
     // INVENTORY
-    Mono<ContainerSummaryDto> addItemToActiveContainer(AddItemRequestDto dto, Long ownerId, String ownerType, String ownerName);
-    Mono<ContainerSummaryDto> dropItemFromActiveContainer(Long itemId, String itemName, Boolean dropChildren, Integer itemQuantity);
+    Mono<ApiResponsePayload<ContainerSummaryDto>> addItemToActiveContainer(AddItemRequestDto dto, Long ownerId, String ownerType, String ownerName);
+    Mono<ApiResponsePayload<ContainerSummaryDto>> dropItemFromActiveContainer(Long itemId, String itemName, Boolean dropChildren, Integer itemQuantity);
+    Mono<ApiResponsePayload<ContainerSummaryDto>> modifyItemInActiveContainer(ModifyItemRequestDto dto);
 }

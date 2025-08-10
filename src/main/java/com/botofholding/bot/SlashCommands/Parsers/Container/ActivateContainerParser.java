@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 @Component
 public class ActivateContainerParser implements ContainerParser, ByNameParser {
 
@@ -62,9 +64,9 @@ public class ActivateContainerParser implements ContainerParser, ByNameParser {
      * A private helper to create a Reply, ensuring guild-owned container replies are always public.
      */
     private Reply createReply(ContainerSummaryDto container, OwnerContext owner) {
-        String message = MessageFormatter.formatActiveContainerReply(container);
+        List<String> message = MessageFormatter.formatActiveContainerReply(container);
         // Use the centralized helper to determine the ephemeral state.
-        return new Reply(message, isReplyEphemeral(container.getOwnerType(), owner));
+        return new Reply(message, isReplyEphemeral(container.getOwnerType(), owner.useEphemeral()));
     }
 
 }

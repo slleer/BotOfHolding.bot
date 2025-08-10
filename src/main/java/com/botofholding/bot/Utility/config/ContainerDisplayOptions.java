@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class ContainerDisplayOptions {
 
     private final boolean displayOwner;
+    private final boolean displayContainerId;
     private final boolean displayDescription;
     private final boolean displayType;
     private final boolean displayStatus;
@@ -22,9 +23,11 @@ public class ContainerDisplayOptions {
     private final boolean displayContainerItemId;
     private final boolean displayItemId;
     private final boolean displayLastModified;
+    private final boolean displayChildrenItems;
 
     private ContainerDisplayOptions(Builder builder) {
         this.displayOwner = builder.displayOwner;
+        this.displayContainerId = builder.displayContainerId;
         this.displayDescription = builder.displayDescription;
         this.displayType = builder.displayType;
         this.displayStatus = builder.displayStatus;
@@ -35,6 +38,7 @@ public class ContainerDisplayOptions {
         this.displayContainerItemId = builder.displayContainerItemId;
         this.displayItemId = builder.displayItemId;
         this.displayLastModified = builder.displayLastModified;
+        this.displayChildrenItems = builder.displayChildrenItems;
     }
 
     /**
@@ -51,6 +55,7 @@ public class ContainerDisplayOptions {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class Builder {
         private boolean displayOwner = true;
+        private boolean displayContainerId = true;
         private boolean displayDescription = true;
         private boolean displayType = true;
         private boolean displayStatus = true;
@@ -61,9 +66,16 @@ public class ContainerDisplayOptions {
         private boolean displayContainerItemId = true;
         private boolean displayItemId = true;
         private boolean displayLastModified = true;
+        private boolean displayChildrenItems = true;
+
 
         public Builder displayOwner(boolean displayOwner) {
             this.displayOwner = displayOwner;
+            return this;
+        }
+
+        public Builder displayContainerId(boolean displayContainerId) {
+            this.displayContainerId = displayContainerId;
             return this;
         }
 
@@ -117,6 +129,10 @@ public class ContainerDisplayOptions {
             return this;
         }
 
+        public Builder displayChildrenItems(boolean displayChildrenItems) {
+            this.displayChildrenItems = displayChildrenItems;
+            return this;
+        }
 
         public ContainerDisplayOptions build() {
             return new ContainerDisplayOptions(this);

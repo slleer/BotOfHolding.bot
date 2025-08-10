@@ -6,11 +6,14 @@ import com.botofholding.bot.SlashCommands.Parsers.ContainerParser;
 import com.botofholding.bot.Utility.CommandConstants;
 import com.botofholding.bot.Utility.EventUtility;
 import com.botofholding.bot.Utility.MessageFormatter;
+import com.botofholding.bot.Utility.ReplyUtility;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Component
 public class FindActiveContainerParser implements ContainerParser {
@@ -33,15 +36,11 @@ public class FindActiveContainerParser implements ContainerParser {
         return userEphemeralMono
                 .flatMap( userEphemeral ->
                         apiClient.getActiveContainer().flatMap(activeContainer -> {
-                            String message = MessageFormatter.formatActiveContainerReply(activeContainer);
-                            return event.reply(message).withEphemeral(userEphemeral);
+                            List<String> message = MessageFormatter.formatActiveContainerReply(activeContainer);
+                            return ReplyUtility.sendMultiPartReply(event, message, userEphemeral);
                         })
                 )
                 .contextWrite(ctx -> EventUtility.addUserContext(ctx, event.getInteraction().getUser()))
                 .then();
-    }
-    @Override
-    public boolean extractEphemeralSetting(UserSettingsDto settings) {
-        return settings.isEphemeralContainer();
     }
 }

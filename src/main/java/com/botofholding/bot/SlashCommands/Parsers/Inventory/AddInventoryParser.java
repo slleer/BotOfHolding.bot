@@ -10,6 +10,7 @@ import com.botofholding.bot.SlashCommands.Parsers.RequestBodyParser;
 import com.botofholding.bot.Utility.CommandConstants;
 import com.botofholding.bot.Utility.EventUtility;
 import com.botofholding.bot.Utility.MessageFormatter;
+import com.botofholding.bot.Utility.ReplyUtility;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,13 +50,13 @@ public class AddInventoryParser implements InventoryParser, RequestBodyParser<Ad
                     TargetOwner targetOwner = tuple.getT2();
                     boolean useEphemeral = tuple.getT3();
                     return apiClient.addItemToActiveContainer(requestDto, targetOwner.ownerId(), targetOwner.ownerType(), targetOwner.ownerName())
-                            .map(updatedContainer -> new Reply(MessageFormatter.formatAddInventoryContainerReply(updatedContainer), useEphemeral));
+                            .map(payload -> new Reply(MessageFormatter.formatAddInventoryContainerReply(payload.data(), payload.message()), useEphemeral));
                 });
 
         logger.info("About to reply after completing apiClient call");
         // 5. Send the reply to the user. The GlobalCommandExceptionHandlerAspect will handle any errors.
         return replyMono
-                .flatMap(reply -> event.reply(reply.message()).withEphemeral(reply.isEphemeral()))
+                .flatMap(reply -> ReplyUtility.sendMultiPartReply(event, reply.message(), reply.isEphemeral()))
                 .contextWrite(ctx -> EventUtility.addUserContext(ctx, EventUtility.getInvokingUser(event)))
                 .then();
     }
@@ -66,7 +67,7 @@ public class AddInventoryParser implements InventoryParser, RequestBodyParser<Ad
         Mono<AutocompleteSelection> selectionMono = EventUtility.getAutocompleteSelection(event, getSubCommandName(), CommandConstants.OPTION_ITEM);
 
         // (optional) Item to put added item inside, such as containers
-        Mono<AutocompleteSelection> insideMono = EventUtility.getAutocompleteSelection(event, getSubCommandName(), CommandConstants.OPTION_PARENT)
+        Mono<AutocompleteSelection> insideMono = EventUtility.getAutocompleteSelection(event, getSubCommandName(), CommandConstants.OPTION_INVENTORY_ADD_PARENT)
                 .defaultIfEmpty(new AutocompleteSelection("", null));
 
         Mono<Integer> quantityMono = EventUtility.getOptionValueAsLong(event, getSubCommandName(), CommandConstants.OPTION_QUANTITY)

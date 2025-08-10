@@ -7,13 +7,12 @@ import com.botofholding.bot.SlashCommands.Parsers.InventoryParser;
 import com.botofholding.bot.Utility.CommandConstants;
 import com.botofholding.bot.Utility.EventUtility;
 import com.botofholding.bot.Utility.MessageFormatter;
+import com.botofholding.bot.Utility.ReplyUtility;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 @Component
 public class DropInventoryParser implements InventoryParser {
@@ -41,7 +40,7 @@ public class DropInventoryParser implements InventoryParser {
                 .map(Long::intValue)
                 .defaultIfEmpty(1);
 
-        Mono<Boolean> dropChildrenMono = Mono.just(EventUtility.getOptionValueAsOptionalBoolean(event, getSubCommandName(), CommandConstants.OPTION_DROP_CHILDREN).orElse(false));
+        Mono<Boolean> dropChildrenMono = Mono.just(EventUtility.getOptionValue(event, getSubCommandName(), CommandConstants.OPTION_INVENTORY_DROP_DROP_CHILDREN).isPresent());
 
         // 4. Get the user's ephemeral setting for replies.
         Mono<Boolean> ephemeralMono = getEphemeralSetting(apiClient);
@@ -55,9 +54,9 @@ public class DropInventoryParser implements InventoryParser {
                     boolean useEphemeral = tuple.getT4();
                     logger.info("Making call to apiClient.dropItemFromActiveContainer with values: id={}, name='{}', quantity={}.", selection.id(), selection.name(), quantity);
                     return apiClient.dropItemFromActiveContainer(selection.id(), selection.name(), dropChildren, quantity)
-                            .map(updatedContainer -> new Reply(MessageFormatter.formatDropInventoryContainerReply(updatedContainer, selection.name(), quantity), useEphemeral));
+                            .map(payload -> new Reply(MessageFormatter.formatDropInventoryContainerReply(payload.data(), payload.message()), useEphemeral));
                 });
-        return replyMono.flatMap(reply -> event.reply(reply.message()).withEphemeral(reply.isEphemeral()))
+        return replyMono.flatMap(reply -> ReplyUtility.sendMultiPartReply(event, reply.message(), reply.isEphemeral()))
                 .contextWrite(ctx -> EventUtility.addUserContext(ctx, EventUtility.getInvokingUser(event)))
                 .then();
     }

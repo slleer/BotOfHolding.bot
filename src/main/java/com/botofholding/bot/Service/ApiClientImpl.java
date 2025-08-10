@@ -1,6 +1,7 @@
 package com.botofholding.bot.Service;
 
 import com.botofholding.bot.Domain.DTOs.Request.*;
+import com.botofholding.bot.Domain.Entities.ApiResponsePayload;
 import com.botofholding.bot.Domain.DTOs.Response.*;
 import com.botofholding.bot.Exception.ApiException;
 import jakarta.annotation.PostConstruct;
@@ -93,24 +94,24 @@ public class ApiClientImpl implements ApiClient {
     // =================================================================
 
     @Override
-    public Mono<BohUserDto> getMyProfile() {
+    public Mono<ApiResponsePayload<BohUserDto>> getMyProfile() {
         logger.debug("Attempting to retrieve current user's profile from /api/users/me");
         return webClient.get()
                 .uri("/users/me")
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<StandardApiResponse<BohUserDto>>() {})
-                .flatMap(this::handleApiResponse);
+                .flatMap(this::handleApiResponseWithPayload);
     }
 
     @Override
-    public Mono<BohUserDto> updateMyProfile(UserRequestDto dto) {
+    public Mono<ApiResponsePayload<BohUserDto>> updateMyProfile(UserRequestDto dto) {
         logger.debug("Attempting to update current user's profile via /api/users/me");
         return webClient.put()
                 .uri("/users/me")
                 .bodyValue(dto)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<StandardApiResponse<BohUserDto>>() {})
-                .flatMap(this::handleApiResponse);
+                .flatMap(this::handleApiResponseWithPayload);
     }
 
     @Override
@@ -269,7 +270,7 @@ public class ApiClientImpl implements ApiClient {
     }
 
     @Override
-    public Mono<ContainerSummaryDto> addItemToActiveContainer(AddItemRequestDto dto, Long ownerId, String ownerType, String ownerName) {
+    public Mono<ApiResponsePayload<ContainerSummaryDto>> addItemToActiveContainer(AddItemRequestDto dto, Long ownerId, String ownerType, String ownerName) {
         logger.debug("Attempting to add item {} (qty: {}) to active container", dto.getItemId(), dto.getQuantity());
         return webClient.post()
                 .uri("/containers/active/items")
@@ -283,16 +284,17 @@ public class ApiClientImpl implements ApiClient {
                 .bodyValue(dto)
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<StandardApiResponse<ContainerSummaryDto>>() {})
-                .flatMap(this::handleApiResponse);
+                .flatMap(this::handleApiResponseWithPayload);
     }
 
     @Override
-    public Mono<ContainerSummaryDto> dropItemFromActiveContainer(Long itemId, String itemName, Boolean dropChildren, Integer itemQuantity) {
+    public Mono<ApiResponsePayload<ContainerSummaryDto>> dropItemFromActiveContainer(Long itemId, String itemName, Boolean dropChildren, Integer itemQuantity) {
         return webClient.delete()
                 .uri(uriBuilder -> {
                     uriBuilder.path("/containers/active/items");
                     if (itemId != null) {
-                        uriBuilder.queryParam("itemId", itemId);
+                        logger.debug("itemId: {}", itemId);
+                        uriBuilder.queryParam("id", itemId);
                     }
                     if (itemName != null) {
                         uriBuilder.queryParam("name", itemName);
@@ -305,9 +307,20 @@ public class ApiClientImpl implements ApiClient {
                 })
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<StandardApiResponse<ContainerSummaryDto>>() {})
-                .flatMap(this::handleApiResponse);
+                .flatMap(this::handleApiResponseWithPayload);
 
     }
+
+    @Override
+    public Mono<ApiResponsePayload<ContainerSummaryDto>> modifyItemInActiveContainer(ModifyItemRequestDto dto) {
+        return webClient.patch()
+                .uri("/containers/active/items")
+                .bodyValue(dto)
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<StandardApiResponse<ContainerSummaryDto>>() {})
+                .flatMap(this::handleApiResponseWithPayload);
+    }
+
 
     // =================================================================
     // ITEM API CALLS
@@ -437,6 +450,22 @@ public class ApiClientImpl implements ApiClient {
         if (apiResponse.isSuccess()) {
             logger.info(apiResponse.getMessage());
             return Mono.justOrEmpty(apiResponse.getData());
+        } else {
+            return Mono.error(new ApiException(apiResponse.getMessage() != null ? apiResponse.getMessage() : "An unknown API error occurred."));
+        }
+    }
+
+    /**
+     * A generic helper to handle a StandardApiResponse and wrap the result in an ApiResponsePayload.
+     * This is used for endpoints where the success message is needed by the caller.
+     * @param apiResponse The response from the API.
+     * @return A Mono containing the ApiResponsePayload on success, or a Mono.error on failure.
+     * @param <T> The type of the data within the response.
+     */
+    private <T> Mono<ApiResponsePayload<T>> handleApiResponseWithPayload(StandardApiResponse<T> apiResponse) {
+        if (apiResponse.isSuccess()) {
+            logger.info(apiResponse.getMessage());
+            return Mono.just(new ApiResponsePayload<>(apiResponse.getData(), apiResponse.getMessage()));
         } else {
             return Mono.error(new ApiException(apiResponse.getMessage() != null ? apiResponse.getMessage() : "An unknown API error occurred."));
         }

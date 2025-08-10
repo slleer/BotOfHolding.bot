@@ -1,16 +1,18 @@
 package com.botofholding.bot.Utility;
 
 import java.math.BigDecimal;
+
 import com.botofholding.bot.Domain.DTOs.Response.*;
 import com.botofholding.bot.Utility.config.ContainerDisplayOptions;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.function.Function;
 
 public final class MessageFormatter {
 
+    private static final int DISCORD_CHAR_LIMIT = 1950; // Safety margin for message length
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("MMMM d, yyyy - h:mm a");
     private static final String EMPTY = "";
     private static final String BULLET = "- ";
@@ -29,6 +31,7 @@ public final class MessageFormatter {
     private static final Function<String, String> ITALIC_VALUE_FORMATTER = MessageFormatter::italic;
     private static final Function<String, String> SPOILER_ITALIC_VALUE_FORMATTER = value -> spoiler(italic(value));
     private static final Function<String, String> BOLD_ITALIC_VALUE_FORMATTER = MessageFormatter::boldItalic;
+    private static final Function<String, String> SUB_BULLET_INDENT = indent -> "  " + indent;
 
 
     private MessageFormatter(){}
@@ -101,6 +104,50 @@ public final class MessageFormatter {
         }
     }
 
+    /**
+     * Appends content to the last chunk in a list of StringBuilders. If the content would exceed
+     * the character limit, it creates a new chunk, prepends the original header, and adds the content there.
+     *
+     * @param chunks The list of message chunks being built.
+     * @param content The new string content to append.
+     * @param header The header to use if a new chunk is created.
+     */
+    private static void appendWithSplitting(List<StringBuilder> chunks, String content, String header) {
+        StringBuilder lastChunk = chunks.get(chunks.size() - 1);
+        if (lastChunk.length() + content.length() > DISCORD_CHAR_LIMIT) {
+            StringBuilder newChunk = new StringBuilder();
+            // Start the new message with the original header for context.
+            if (header != null && !header.isBlank()) {
+                newChunk.append(header);
+            }
+            newChunk.append(content);
+            chunks.add(newChunk);
+        } else {
+            lastChunk.append(content);
+        }
+    }
+
+    /**
+     * A wrapper around {@link #appendWithSplitting} that first formats a line of text.
+     *
+     * @param chunks The list of message chunks being built.
+     * @param prefix The string to prepend to the line (e.g., indent).
+     * @param label The text for the label part.
+     * @param value The text for the value part.
+     * @param labelFormatter A function to style the label.
+     * @param valueFormatter A function to style the value.
+     * @param header The header to use if a new chunk is created.
+     */
+    private static void appendLineWithSplitting(
+            List<StringBuilder> chunks, String prefix, String label, String value,
+            Function<String, String> labelFormatter, Function<String, String> valueFormatter, String header
+    ) {
+        if (value != null && !value.trim().isEmpty()) {
+            String line = prefix + labelFormatter.apply(label) + " " + valueFormatter.apply(value) + "\n";
+            appendWithSplitting(chunks, line, header);
+        }
+    }
+
     public static String formatUserReply(BohUserDto userDto, String context) {
         String displayName = userDto.getBohGlobalUserName() != null ? userDto.getBohGlobalUserName() : userDto.getBohUserName();
         StringBuilder sb = new StringBuilder();
@@ -119,113 +166,167 @@ public final class MessageFormatter {
         return sb.toString();
     }
 
-    public static String formatGetContainerReply(ContainerSummaryDto containerDto) {
+    public static List<String> formatGetContainerReply(ContainerSummaryDto containerDto) {
         // Default options: show everything.
         ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
-        return formatContainerReply(containerDto, HEADER_FORMATTER.apply("Found Container:"), BULLET, options);
+        return formatContainerReply(containerDto, SUBHEADER_FORMATTER.apply("Found Container:"), BULLET, options);
     }
 
-    public static String formatUseContainerReply(ContainerSummaryDto containerDto) {
+    public static List<String> formatUseContainerReply(ContainerSummaryDto containerDto) {
         ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
-        return formatContainerReply(containerDto, HEADER_FORMATTER.apply("Using Container:"), BULLET, options);
+        return formatContainerReply(containerDto, SUBHEADER_FORMATTER.apply("Using Container:"), BULLET, options);
     }
 
-    public static String formatAddContainerReply(ContainerSummaryDto containerDto) {
+    public static List<String> formatAddContainerReply(ContainerSummaryDto containerDto) {
         // On creation, the item list is always empty, so don't display it.
         ContainerDisplayOptions options = ContainerDisplayOptions.builder()
                 .displayItems(false)
                 .build();
-        return formatContainerReply(containerDto, HEADER_FORMATTER.apply("New Container:"), BULLET, options);
+        return formatContainerReply(containerDto, SUBHEADER_FORMATTER.apply("New Container:"), BULLET, options);
     }
 
-    public static String formatActiveContainerReply(ContainerSummaryDto activeContainer) {
+    public static List<String> formatActiveContainerReply(ContainerSummaryDto activeContainer) {
         ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
-        return formatContainerReply(activeContainer, HEADER_FORMATTER.apply("Active Container:"), BULLET, options);
+        return formatContainerReply(activeContainer, SUBHEADER_FORMATTER.apply("Active Container:"), BULLET, options);
     }
 
-    public static String formatAddInventoryContainerReply(ContainerSummaryDto containerDto) {
-        // After adding an item, the user definitely wants to see the updated item list.
-        ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
-        return formatContainerReply(containerDto, HEADER_FORMATTER.apply("Item Added to Container:"), BULLET, options);
+    public static List<String> formatAddInventoryContainerReply(ContainerSummaryDto containerDto, String successMessage) {
+        // TODO - decide if the add, drop, and modify formatter messages should be combined due to similar logic.
+        ContainerDisplayOptions options = ContainerDisplayOptions.builder().displayStatus(false).build();
+        return formatContainerReply(containerDto, SUBHEADER_FORMATTER.apply(successMessage), BULLET, options);
     }
 
-    public static String formatDropInventoryContainerReply(ContainerSummaryDto updatedContainer, String itemName, int quantity) {
-        ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
-        return formatContainerReply(updatedContainer, HEADER_FORMATTER.apply(quantity + "x " + itemName + " Dropped from Container:"), BULLET, options);
+    public static List<String> formatDropInventoryContainerReply(ContainerSummaryDto updatedContainer, String successMessage) {
+        ContainerDisplayOptions options = ContainerDisplayOptions.builder().displayStatus(false).build();
+        return formatContainerReply(updatedContainer, SUBHEADER_FORMATTER.apply(successMessage), BULLET, options);
     }
 
-    private static String formatContainerReply(ContainerSummaryDto containerDto, String header, String bullet, ContainerDisplayOptions options) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(header).append(bullet).append(bold(containerDto.getContainerName())).append("\n");
+    public static List<String> formatModifyInventoryContainerReply(ContainerSummaryDto containerDto, String successMessage) {
+        ContainerDisplayOptions options = ContainerDisplayOptions.builder().displayStatus(false).build();
+        return formatContainerReply(containerDto, SUBHEADER_FORMATTER.apply(successMessage), BULLET, options);
+    }
+
+
+    // TODO - implement system to deal with the 2000 character limit using either editReply, createFollowup, or threads with createMessage. Most likely not editReply (seems more suited to deferred responses).
+    private static List<String> formatContainerReply(ContainerSummaryDto containerDto, String header, String bullet, ContainerDisplayOptions options) {
+        List<StringBuilder> chunks = new ArrayList<>();
+        chunks.add(new StringBuilder()); // Start with the first chunk
+
+        String initialLine = header + bullet + bold(containerDto.getContainerName()) + "\n";
+        String continuedHeader = header + " (cont.)";
+        appendWithSplitting(chunks, initialLine, header);
+
+        String subBullet = SUB_BULLET_INDENT.apply(bullet.contains(".") ? BULLET : bullet);
 
         if (options.isDisplayOwner()) {
-            appendLine(sb, BULLET_INDENTED, "Owner", containerDto.getOwnerDisplayName(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
+            appendLineWithSplitting(chunks, subBullet, "Owner", containerDto.getOwnerDisplayName(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
         }
-
+        if (options.isDisplayContainerId() && containerDto.getContainerId() != null) {
+            appendLineWithSplitting(chunks, subBullet, "Id", String.valueOf(containerDto.getContainerId()), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+        }
         if (options.isDisplayDescription() && containerDto.getContainerDescription() != null) {
-            appendLine(sb, BULLET_INDENTED, "Description", containerDto.getContainerDescription(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
+            appendLineWithSplitting(chunks, subBullet, "Description", containerDto.getContainerDescription(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
         }
         if (options.isDisplayType() && containerDto.getContainerTypeName() != null) {
-            appendLine(sb, BULLET_INDENTED, "Type", containerDto.getContainerTypeName(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
+            appendLineWithSplitting(chunks, subBullet, "Type", containerDto.getContainerTypeName(), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
         }
         if (options.isDisplayStatus() && containerDto.isActive()){
-            appendLine(sb, BULLET_INDENTED, "Status", "Active", BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
+            appendLineWithSplitting(chunks, subBullet, "Status", "Active", BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
         }
         if (options.isDisplayLastActive() && containerDto.getLastActiveDateTime() != null) {
-            appendLine(sb, BULLET_INDENTED, "Last Active", containerDto.getLastActiveDateTime().format(DATE_TIME_FORMATTER), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
+            appendLineWithSplitting(chunks, subBullet, "Last Active", containerDto.getLastActiveDateTime().format(DATE_TIME_FORMATTER), BOLD_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
         }
 
         if (options.isDisplayItems() && containerDto.getItems() != null && !containerDto.getItems().isEmpty()) {
-//            sb.append(BULLET_INDENTED).append(bold("Contents:")).append("\n");
+//            sb.append(subBullet).append(bold("Contents:")).append("\n");
 
-            containerDto.getItems().stream()
-                    .sorted(java.util.Comparator.comparing(ContainerItemSummaryDto::getLastModified).reversed())
-                    .forEach(item -> {
-                        sb.append(BULLET_INDENTED).append(item.getItemName());
-                        if (item.getQuantity() > 1) {
-                            sb.append(" ").append(bold(String.format("x%d", item.getQuantity())));
-                        }
-                        sb.append("\n");
-                        if (options.isDisplayNote() && item.getUserNote() != null && !item.getUserNote().isBlank()) {
-                            appendLine(sb, BULLET_2X_INDENTED, "-# ", item.getUserNote(), EMPTY_LABEL_FORMATTER, ITALIC_VALUE_FORMATTER);
-                        } else {
-                            sb.append("\n");
-                        }
-                        if (options.isDisplayContainerItemId()) {
-                            appendLine(sb, BULLET_3X_INDENTED, "Id", String.valueOf(item.getContainerItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
-                        }
-                        if (options.isDisplayItemId()) {
-                            appendLine(sb, BULLET_3X_INDENTED, "Item Id", String.valueOf(item.getItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
-                        }
-                        if (options.isDisplayLastModified()){
-                            appendLine(sb, BULLET_3X_INDENTED, "Last Modified", item.getLastModified().format(DATE_TIME_FORMATTER), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER);
-                        }
-                    });
+            formatChildrenContainerItems(containerDto.getItems(), options, chunks, subBullet, continuedHeader);
+//            containerDto.getItems().stream()
+//                .sorted(java.util.Comparator.comparing(ContainerItemSummaryDto::getItemName))
+//                .forEach(item -> {
+//                    sb.append(subBullet).append(item.getItemName());
+//                    String x2_SubBullet = SUB_BULLET_INDENT.apply(subBullet);
+//                    if (item.getQuantity() > 1) {
+//                        sb.append(" ").append(bold(String.format("x%d", item.getQuantity())));
+//                    }
+//                    sb.append("\n");
+//                    if (options.isDisplayNote() && item.getUserNote() != null && !item.getUserNote().isBlank()) {
+//                        appendLineWithSplitting(chunks, x2_SubBullet, "-# ", item.getUserNote(), EMPTY_LABEL_FORMATTER, ITALIC_VALUE_FORMATTER, continuedHeader);
+//                    }
+//                    if (options.isDisplayChildrenItems() && item.getChildren() != null && !item.getChildren().isEmpty()) {
+//                        formatContainerItems(item.getChildren(), options, sb, x2_SubBullet);
+//                    }
+//                    if (options.isDisplayContainerItemId()) {
+//                        appendLineWithSplitting(chunks, x2_SubBullet, "Id", String.valueOf(item.getContainerItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+//                    }
+//                    if (options.isDisplayItemId()) {
+//                        appendLineWithSplitting(chunks, x2_SubBullet, "Item Id", String.valueOf(item.getItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+//                    }
+//                    if (options.isDisplayLastModified()){
+//                        appendLineWithSplitting(chunks, x2_SubBullet, "Last Modified", item.getLastModified().format(DATE_TIME_FORMATTER), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+//                    }
+//                });
         }
-        return sb.toString();
+        return chunks.stream().map(StringBuilder::toString).filter(s -> !s.isEmpty()).toList();
     }
 
-    public static String formatContainerReply(List<ContainerSummaryDto> dtos) {
+    private static void formatChildrenContainerItems(List<ContainerItemSummaryDto> items, ContainerDisplayOptions options, List<StringBuilder> chunks, String subBullet, String continuedHeader) {
+
+        items.stream()
+                .sorted(java.util.Comparator.comparing(ContainerItemSummaryDto::getItemName))
+                .forEach(item -> {
+                    String initialChildLine = subBullet + item.getItemName() + (item.getQuantity() > 1 ? " " + bold(String.format("x%d", item.getQuantity())) : "") + "\n";
+                    // The item's main line was being calculated but never added to the output.
+                    appendWithSplitting(chunks, initialChildLine, continuedHeader);
+                    String x2_SubBullet = SUB_BULLET_INDENT.apply(subBullet);
+                    if (options.isDisplayNote() && item.getUserNote() != null && !item.getUserNote().isBlank()) {
+                        appendLineWithSplitting(chunks, x2_SubBullet, "-# ", item.getUserNote(), EMPTY_LABEL_FORMATTER, ITALIC_VALUE_FORMATTER, continuedHeader);
+                    }
+                    if (options.isDisplayChildrenItems() && item.getChildren() != null && !item.getChildren().isEmpty()) {
+                        formatChildrenContainerItems(item.getChildren(), options, chunks, x2_SubBullet, continuedHeader);
+                    }
+                    if (options.isDisplayContainerItemId()) {
+                        appendLineWithSplitting(chunks, x2_SubBullet, "Id", String.valueOf(item.getContainerItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+                    }
+                    if (options.isDisplayItemId()) {
+                        appendLineWithSplitting(chunks, x2_SubBullet, "Item Id", String.valueOf(item.getItemId()), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+                    }
+                    if (options.isDisplayLastModified()){
+                        appendLineWithSplitting(chunks, x2_SubBullet, "Last Modified", item.getLastModified().format(DATE_TIME_FORMATTER), PLAIN_LABEL_FORMATTER, PLAIN_VALUE_FORMATTER, continuedHeader);
+                    }
+                });
+
+    }
+
+    public static List<String> formatContainerReply(List<ContainerSummaryDto> dtos) {
         if (dtos.isEmpty()) {
             // This case is handled in the parser, but it's good practice to be defensive.
-            return HEADER_FORMATTER.apply("No Container/s Found.");
+            return List.of(HEADER_FORMATTER.apply("No Container(s) Found."));
         }
         // For a list view, we want to show everything for each container.
-        ContainerDisplayOptions options = ContainerDisplayOptions.builder().build();
+        ContainerDisplayOptions options = ContainerDisplayOptions.builder()
+                .displayItems(false)
+                .displayStatus(false)
+                .build();
 
         if (dtos.size() == 1) {
-            return formatContainerReply(dtos.get(0), HEADER_FORMATTER.apply("Found Container:"), BULLET, options);
+            return formatContainerReply(dtos.get(0), SUBHEADER_FORMATTER.apply("Found Container:"), BULLET, options);
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append(HEADER_FORMATTER.apply("Found Containers:"));
+
+        List<StringBuilder> chunks = new ArrayList<>();
+        chunks.add(new StringBuilder());
+        String header = SUBHEADER_FORMATTER.apply("Found Containers:");
+        String continuedHeader = header + " (cont.)";
+        appendWithSplitting(chunks, header, continuedHeader);
 
         for (int i = 0; i < dtos.size(); i++) {
             String bullet = (i + 1) + ". ";
-            // This reuses the existing logic perfectly and efficiently.
-            // To switch back to numbered bullets, change BULLET to bullet
-            sb.append(formatContainerReply(dtos.get(i), EMPTY, BULLET, options));
+            List<String> formattedContainer = formatContainerReply(dtos.get(i), EMPTY, bullet, options);
+            for (String part : formattedContainer) {
+                appendWithSplitting(chunks, part, continuedHeader);
+            }
         }
-        return sb.toString();
+        return chunks.stream().map(StringBuilder::toString).filter(s -> !s.isEmpty()).toList();
     }
 
     public static String formatSettingsUpdateReply(UserSettingsDto data) {
@@ -236,10 +337,20 @@ public final class MessageFormatter {
         return sb.toString();
     }
 
-    public static String formatGetItemReply(ItemSummaryDto itemDto) {
-        return formatItemReply(itemDto, HEADER_FORMATTER.apply("Found Item:"), BULLET);
+    public static List<String> formatGetItemReply(ItemSummaryDto itemDto) {
+        return List.of(formatSingleItem(itemDto, HEADER_FORMATTER.apply("Found Item:"), BULLET));
     }
-    public static String formatItemReply(ItemSummaryDto itemDto, String header, String bullet) {
+
+    /**
+     * Formats a single item's details into a string. This is a private helper
+     * to support the public-facing formatters.
+     *
+     * @param itemDto The item to format.
+     * @param header  The header to prepend.
+     * @param bullet  The bullet style to use.
+     * @return A formatted string representing the item.
+     */
+    private static String formatSingleItem(ItemSummaryDto itemDto, String header, String bullet) {
         StringBuilder sb = new StringBuilder();
         sb.append(header).append(bullet).append(bold(itemDto.getItemName())).append("\n");
 
@@ -271,28 +382,35 @@ public final class MessageFormatter {
         return sb.toString();
     }
 
-    public static String formatItemReply(List<ItemSummaryDto> dtos) {
+    public static List<String> formatItemReply(List<ItemSummaryDto> dtos) {
         if (dtos.isEmpty()) {
             // This case is handled in the parser, but it's good practice to be defensive.
-            return HEADER_FORMATTER.apply("No items found.");
+            return List.of(HEADER_FORMATTER.apply("No items found."));
         }
         if (dtos.size() == 1) {
-            return formatItemReply(dtos.get(0), HEADER_FORMATTER.apply("Found Item:"), BULLET);
+            return formatGetItemReply(dtos.get(0));
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append(HEADER_FORMATTER.apply("Found Items:"));
+
+        List<StringBuilder> chunks = new ArrayList<>();
+        chunks.add(new StringBuilder());
+        String header = HEADER_FORMATTER.apply("Found Items:");
+        String continuedHeader = HEADER_FORMATTER.apply("Found Items (cont.):");
+        appendWithSplitting(chunks, header, continuedHeader);
+
         for (int i = 0; i < dtos.size(); i++) {
             String bullet = (i + 1) + ". ";
             // This reuses the existing logic perfectly and efficiently.
-            sb.append(formatItemReply(dtos.get(i), EMPTY, bullet)).append("\n");
+            String formattedItem = formatSingleItem(dtos.get(i), EMPTY, bullet);
+            appendWithSplitting(chunks, formattedItem + "\n", continuedHeader);
         }
-        return sb.toString();
+        return chunks.stream().map(StringBuilder::toString).filter(s -> !s.isEmpty()).toList();
     }
 
-    public static String formatDeletedEntityReply(DeletedEntityDto dto) {
-        return HEADER_FORMATTER.apply(String.format("Deleted %s:", dto.getEntityType()))
+    public static List<String> formatDeletedEntityReply(DeletedEntityDto dto) {
+        String message = HEADER_FORMATTER.apply(String.format("Deleted %s:", dto.getEntityType()))
                 + BULLET + bold(dto.getName()) + "\n"
                 + BULLET_INDENTED + "ID: " + dto.getId() + "\n";
+        return List.of(message);
     }
 
 }

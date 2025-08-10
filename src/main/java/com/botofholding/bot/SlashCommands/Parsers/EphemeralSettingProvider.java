@@ -31,10 +31,10 @@ public interface EphemeralSettingProvider {
      * A centralized helper to determine if a reply should be ephemeral based on a
      * consistent business rule: guild-owned entity replies are always public.
      * @param entityOwnerType The owner type from the DTO (e.g., "GUILD", "USER").
-     * @param userContext The context containing the user's personal ephemeral preference.
+     * @param userEphemeralSetting The user's ephemeral setting.
      * @return true if the reply should be ephemeral, false otherwise.
      */
-    default boolean isReplyEphemeral(String entityOwnerType, OwnerContext userContext) {
-        return !"GUILD".equalsIgnoreCase(entityOwnerType) && userContext.useEphemeral();
+    default boolean isReplyEphemeral(String entityOwnerType, boolean userEphemeralSetting) {
+        return !"GUILD".equalsIgnoreCase(entityOwnerType) && userEphemeralSetting;
     }
 }

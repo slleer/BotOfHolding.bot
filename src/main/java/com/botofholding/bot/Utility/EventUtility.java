@@ -42,6 +42,7 @@ public final class EventUtility {
 
         // 2. Use flatMap to reactively build the target owner context.
         return ownerTypeMono.flatMap(ownerType -> {
+            logger.debug("Determining the targetOwner from ownerType '{}'.", ownerType);
             if (ownerType == OwnerType.GUILD) {
                 // User explicitly requested a GUILD owner. We must enforce this.
                 return getGuildId(event)
@@ -115,6 +116,11 @@ public final class EventUtility {
         return Mono.justOrEmpty(getOptionValueAsOptionalBoolean(event, subcommandName, optionName))
                 .map(isChecked -> isChecked ? OwnerType.GUILD : OwnerType.USER);
     }
+
+    public static Mono<OwnerType> getOwnerTypeFromSingleChoice(ChatInputInteractionEvent event, String subcommandName, String optionName) {
+        return Mono.justOrEmpty(getOptionValue(event, subcommandName, optionName).isPresent() ? OwnerType.GUILD : OwnerType.USER).defaultIfEmpty(OwnerType.USER);
+    }
+
     /**
      * An OwnerTypeExtractor strategy that parses a string option ("GUILD" or "USER").
      */

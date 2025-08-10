@@ -35,13 +35,15 @@ public class AutoCompleteListener implements EventListener<ChatInputAutoComplete
                 .next()
                 .flatMap(command -> {
                     logger.debug("Dispatching autocomplete event for command '{}' to {}", event.getCommandName(), command.getClass().getSimpleName());
-                    return command.handle(event);
+                    // We must convert the Mono<Void> from the handler into a value-emitting Mono
+                    // to prevent the downstream switchIfEmpty from triggering on a successful, but empty, completion.
+                    return command.handle(event).thenReturn(true);
                 })
                 .switchIfEmpty(Mono.defer(() -> {
                     logger.warn("No AutoCompleteCommand found for command '{}'", event.getCommandName());
                     return Mono.empty();
-                }))
-                .onErrorResume(this::handleErrors);
+                })).then() // Convert back to Mono<Void> to match the method signature
+                .onErrorResume(this::handleErrors); // Handle any errors in the chain
     }
 
     @Override

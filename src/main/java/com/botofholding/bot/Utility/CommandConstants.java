@@ -12,8 +12,7 @@ public final class CommandConstants {
     public static final String OPTION_ID = "id";
     public static final String OPTION_PRIORITIZE = "prioritize";
     public static final String OPTION_QUANTITY = "quantity";
-    public static final String OPTION_PARENT = "inside-this-item";
-    public static final String OPTION_DROP_CHILDREN = "drop-contents";
+    public static final String OPTION_NOTE = "note";
     public static final int DISCORD_CHOICE_LIMIT = 25;
 
     // --- Generic, Reusable Entity based options ---
@@ -65,10 +64,17 @@ public final class CommandConstants {
     // --- Inventory Command ---
     public static final String SUBCMD_INVENTORY_ADD = "add";
     public static final String CONTEXT_INVENTORY_ADD = "inventory-add";
-    public static final String OPTION_NOTE = "note";
+    public static final String OPTION_INVENTORY_ADD_PARENT = "put-inside";
 
     public static final String SUBCMD_INVENTORY_DROP = "drop";
     public static final String CONTEXT_INVENTORY_DROP = "inventory-drop";
+    public static final String OPTION_INVENTORY_DROP_DROP_CHILDREN = "drop-contents";
+
+    public static final String SUBCMD_INVENTORY_MODIFY = "edit";
+    public static final String CONTEXT_INVENTORY_MODIFY = "inventory-modify";
+    public static final String OPTION_INVENTORY_MODIFY_MOVE_TO_ROOT = "move-to-root";
+    public static final String OPTION_INVENTORY_MODIFY_MOVE_INSIDE = "move-inside";
+
 
 
 }

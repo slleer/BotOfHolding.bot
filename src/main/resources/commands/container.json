@@ -26,12 +26,24 @@
         {
           "name": "server-owned",
           "description": "if true, container will be owned by the server and available to all members",
-          "type": 5
+          "type": 3,
+          "choices": [
+            {
+              "name": "true",
+              "value": "true"
+            }
+          ]
         },
         {
           "name": "set-as-active",
           "description": "Set this container as active",
-          "type": 5
+          "type": 3,
+          "choices": [
+            {
+              "name": "true",
+              "value": "true"
+            }
+          ]
         }
       ]
     },

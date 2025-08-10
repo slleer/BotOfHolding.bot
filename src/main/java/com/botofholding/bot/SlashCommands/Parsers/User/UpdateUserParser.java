@@ -40,7 +40,7 @@ public class UpdateUserParser implements UserParser, RequestBodyParser<UserReque
 
         Mono<String> replyMono = buildRequestDto(event) // This now returns Mono<UserRequestDto>
                 .flatMap(apiClient::updateMyProfile)
-                .map(apiResponse -> MessageFormatter.formatUserReply(apiResponse, "Updated"));
+                .map(payload -> MessageFormatter.formatUserReply(payload.data(), payload.message()));
 
         return Mono.zip(userEphemeralMono, replyMono)
                 .flatMap(tuple -> {

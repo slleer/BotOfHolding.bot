@@ -7,19 +7,20 @@ import com.botofholding.bot.Utility.CommandConstants;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AddInsideInventoryProvider extends AbstractActiveParentItemNameProvider implements InventoryProvider {
+public class InsideAddInventoryProvider extends AbstractActiveParentItemNameProvider implements InventoryProvider {
 
-    public AddInsideInventoryProvider(ApiClient apiClient) {
+    public InsideAddInventoryProvider(ApiClient apiClient) {
         super(apiClient);
-    }
-
-    @Override
-    public String getOptionName() {
-        return CommandConstants.OPTION_PARENT;
     }
 
     @Override
     public String getSubCommandName() {
         return CommandConstants.SUBCMD_INVENTORY_ADD;
     }
+
+    @Override
+    public String getOptionName() {
+        return CommandConstants.OPTION_INVENTORY_ADD_PARENT;
+    }
+
 }

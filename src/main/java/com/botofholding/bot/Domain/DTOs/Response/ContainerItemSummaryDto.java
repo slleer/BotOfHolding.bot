@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,4 +19,6 @@ public class ContainerItemSummaryDto {
     private Integer quantity;
     private String userNote;
     private LocalDateTime lastModified;
+    private List<ContainerItemSummaryDto> children;
+    private ContainerItemSummaryDto parent;
 }

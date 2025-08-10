@@ -6,11 +6,12 @@ import com.botofholding.bot.Domain.Entities.TargetOwner;
 import com.botofholding.bot.Service.ApiClient;
 import com.botofholding.bot.Utility.CommandConstants;
 import com.botofholding.bot.Utility.EventUtility;
+import com.botofholding.bot.Utility.ReplyUtility;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
-public interface ByNameParser extends Parser, EphemeralSettingProvider {
+public interface ByNameParser extends Parser, OwnerContextProvider {
 
     @Override
     default Mono<Void> execute(ChatInputInteractionEvent event, ApiClient apiClient) {
@@ -28,7 +29,7 @@ public interface ByNameParser extends Parser, EphemeralSettingProvider {
 
         // 4. Use the Reply object to send the final message to Discord.
         return replyMono
-                .flatMap(reply -> event.reply(reply.message()).withEphemeral(reply.isEphemeral()))
+                .flatMap(reply -> ReplyUtility.sendMultiPartReply(event, reply.message(), reply.isEphemeral()))
                 .contextWrite(ctx -> EventUtility.addUserContext(ctx, event.getInteraction().getUser()))
                 .then(); // The AOP aspect will handle all errors.
     }
@@ -51,32 +52,6 @@ public interface ByNameParser extends Parser, EphemeralSettingProvider {
         }
         // Delegate to the specific implementation for fetching by name
         return fetchByNameAndFormat(event, nameOptionValue, apiClient, ownerContextMono);
-    }
-
-
-    /**
-     * Defines how the OwnerContext is built, accommodating the differences
-     * between different types of commands.
-     *
-     * @param event The interaction event.
-     * @param apiClient The API client.
-     * @return A Mono emitting the appropriate OwnerContext.
-     */
-    default Mono<OwnerContext> getOwnerContext(ChatInputInteractionEvent event, ApiClient apiClient) {
-        // 1. Determine the target owner (the user, or the guild if in a server).
-        Mono<TargetOwner> targetOwnerMono = EventUtility.buildGuildTargetOwner(event);
-
-        // 2. Fetch the user's settings to determine if the reply should be ephemeral.
-        Mono<Boolean> useEphemeralMono = getEphemeralSetting(apiClient);
-
-        // 3. Combine the target owner and the ephemeral setting into a single OwnerContext.
-        return Mono.zip(targetOwnerMono, useEphemeralMono)
-                .map(tuple -> new OwnerContext(
-                        tuple.getT1().ownerId(),
-                        tuple.getT1().ownerName(),
-                        tuple.getT1().ownerType(),
-                        tuple.getT2()
-                ));
     }
 
     Mono<Reply> fetchByIdAndFormat(Long objectId, ApiClient apiClient, Mono<OwnerContext> ownerContextMono);

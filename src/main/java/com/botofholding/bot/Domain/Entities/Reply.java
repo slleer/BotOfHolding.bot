@@ -1,4 +1,6 @@
 package com.botofholding.bot.Domain.Entities;
 
-public record Reply(String message, boolean isEphemeral) {}
+import java.util.List;
+
+public record Reply(List<String> message, boolean isEphemeral) {}
 

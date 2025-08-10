@@ -12,7 +12,7 @@
 	<artifactId>bot</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>bot</name>
-	<description>Discord Bot for Bot-Of-Holding project</description>
+	<description>Client for Bot Of Holding TTRPG IMS</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -30,7 +30,7 @@
 		<java.version>17</java.version>
 		<protobuf.version>3.25.5</protobuf.version>
 		<org.mapstruct.version>1.6.3</org.mapstruct.version>
-		<org.projectlombok.version>1.18.16</org.projectlombok.version>
+		<org.projectlombok.version>1.18.32</org.projectlombok.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -164,5 +164,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
 </project>
